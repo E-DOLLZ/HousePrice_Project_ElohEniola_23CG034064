@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request
 import joblib
 import numpy as np
+import os
 
 app = Flask(__name__)
 
-# Load the trained Random Forest model
-model = joblib.load("model/model_random_forest.pkl")
+# Load the trained Random Forest model (relative path for Render)
+MODEL_PATH = os.path.join("model", "model_random_forest.pkl")
+model = joblib.load(MODEL_PATH)
 
 @app.route('/')
 def home():
@@ -14,7 +16,6 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Collect form data
         features = [
             float(request.form['OverallQual']),
             float(request.form['GrLivArea']),
@@ -24,16 +25,20 @@ def predict():
             float(request.form['YearBuilt'])
         ]
 
-        # Convert to 2D array for prediction
         features_array = np.array([features])
-        
-        # Make prediction
         prediction = model.predict(features_array)[0]
 
-        return render_template("index.html", prediction_text=f"Predicted House Price: ${prediction:,.2f}")
-    
+        return render_template(
+            "index.html",
+            prediction_text=f"Predicted House Price: ${prediction:,.2f}"
+        )
+
     except Exception as e:
-        return render_template("index.html", prediction_text=f"Error: {str(e)}")
+        return render_template(
+            "index.html",
+            prediction_text=f"Error: {str(e)}"
+        )
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
